@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper Functions ──────────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    }
+
+    function isAdminOf(adminId) {
+      return isAuthenticated() && (request.auth.uid == adminId || isSuperAdmin());
+    }
+
+    function isEmployeeOf(adminId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/admins/$(adminId)/employees/$(request.auth.uid));
+    }
+
+    // ── SuperAdmin user record (top-level) ───────────────────────────────
+    match /users/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ── Admins collection ─────────────────────────────────────────────────
+    match /admins/{adminId} {
+      allow read, write: if isAdminOf(adminId);
+
+      // ── Products subcollection ─────────────────────────────────────────
+      match /products/{productId} {
+        allow read, write: if isAdminOf(adminId) || isEmployeeOf(adminId);
+
+        // ── Stages subcollection ────────────────────────────────────────
+        match /stages/{stageId} {
+          allow read, write: if isAdminOf(adminId) || 
+            (isEmployeeOf(adminId) && (
+              resource.data.assignedEmployeeId == request.auth.uid || 
+              (resource.data.assignedEmployeeIds != null && request.auth.uid in resource.data.assignedEmployeeIds)
+            ));
+        }
+      }
+
+      // ── Roles subcollection ───────────────────────────────────────────
+      match /roles/{roleId} {
+        allow read, write: if isAdminOf(adminId);
+      }
+
+      // ── Employees subcollection ──────────────────────────────────────
+      match /employees/{employeeId} {
+        allow read, write: if isAdminOf(adminId) || (isAuthenticated() && request.auth.uid == employeeId);
+      }
+    }
+
+    // ── Metadata (app-level counters, config) ─────────────────────────────
+    match /metadata/{document} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
