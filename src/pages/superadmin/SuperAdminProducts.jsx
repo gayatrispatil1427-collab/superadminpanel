@@ -92,12 +92,12 @@ const SuperAdminProducts = () => {
   // Auto-cleanup legacy fields on existing products
   useEffect(() => {
     if (allProducts.length === 0) return;
-    
-    const productsToClean = allProducts.filter(p => 
-      p.category !== undefined || 
-      p.description !== undefined || 
-      p.images !== undefined || 
-      p.status !== undefined || 
+
+    const productsToClean = allProducts.filter(p =>
+      p.category !== undefined ||
+      p.description !== undefined ||
+      p.images !== undefined ||
+      p.status !== undefined ||
       p.stock !== undefined
     );
 
@@ -245,16 +245,16 @@ const SuperAdminProducts = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Package className="text-emerald-500" /> Product Managements
+            <Package className="text-emerald-500" /> Product Management
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            {selectedAdminId 
+            {selectedAdminId
               ? `${allProducts.length} product${allProducts.length !== 1 ? 's' : ''} for the selected admin`
               : 'Select an administrator to view their products'
             }
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
           {/* Admin Selector Dropdown */}
           <div className="flex items-center gap-2">
