@@ -245,7 +245,7 @@ const SuperAdminProducts = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Package className="text-emerald-500" /> Product Management
+            <Package className="text-emerald-500" /> Product Managements
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             {selectedAdminId 
