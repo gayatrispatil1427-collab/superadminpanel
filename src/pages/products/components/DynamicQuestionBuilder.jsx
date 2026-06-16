@@ -6,10 +6,10 @@ import {
   X, 
   ChevronDown, 
   Plus,
-  HelpCircle, 
-  AlignLeft, 
-  CheckSquare, 
-  Type, 
+  HelpCircle,
+  AlignLeft,
+  CheckSquare,
+  Type,
   CircleDot,
   Calendar,
   Clock,
@@ -29,7 +29,10 @@ const answerTypes = [
   'Dropdown Menu',
   'Date',
   'Time',
-  'Date and Time'
+  'Date and Time',
+  'uniqueAlphanumeric12',
+  'dateString',
+  'currentDate'
 ];
 
 const getTypeIcon = (type) => {
@@ -52,6 +55,12 @@ const getTypeIcon = (type) => {
       return <Clock size={15} />;
     case 'Date and Time':
       return <Calendar size={15} />;
+    case 'uniqueAlphanumeric12':
+      return <Hash size={15} />;
+    case 'dateString':
+      return <Calendar size={15} />;
+    case 'currentDate':
+      return <Clock size={15} />;
     default:
       return <HelpCircle size={15} />;
   }
@@ -77,9 +86,42 @@ const getTypeBadgeClass = (type) => {
       return 'bg-rose-50 dark:bg-rose-955/20 text-rose-700 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30';
     case 'Date and Time':
       return 'bg-violet-50 dark:bg-violet-955/20 text-violet-700 dark:text-violet-400 border-violet-200/50 dark:border-violet-900/30';
+    case 'uniqueAlphanumeric12':
+      return 'bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400 border-cyan-200/50 dark:border-cyan-900/30';
+    case 'dateString':
+      return 'bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/30';
+    case 'currentDate':
+      return 'bg-rose-50 dark:bg-rose-955/20 text-rose-700 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30';
     default:
       return 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800';
   }
+};
+
+const generateAlphanumeric12 = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+const getCurrentDateString = () => {
+  const d = new Date();
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const getISODateValue = (str) => {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
 };
 
 const DynamicQuestionBuilder = ({ productId, stageId, question, index, allStages }) => {
@@ -128,6 +170,19 @@ const DynamicQuestionBuilder = ({ productId, stageId, question, index, allStages
   };
 
   const getInitialText = () => {
+    if (question.answerType === 'uniqueAlphanumeric12') {
+      if (question.answer !== undefined && question.answer !== null && question.answer !== '') {
+        return Array.isArray(question.answer) ? question.answer[0] || '' : String(question.answer);
+      }
+      return generateAlphanumeric12();
+    }
+    if (question.answerType === 'currentDate') {
+      if (question.answer !== undefined && question.answer !== null && question.answer !== '') {
+        return Array.isArray(question.answer) ? question.answer[0] || '' : String(question.answer);
+      }
+      return getCurrentDateString();
+    }
+
     if (question.answer !== undefined && question.answer !== null && question.answer !== '') {
       return Array.isArray(question.answer) ? question.answer[0] || '' : String(question.answer);
     }
@@ -154,6 +209,16 @@ const DynamicQuestionBuilder = ({ productId, stageId, question, index, allStages
     setSelectedDropdown(getInitialDropdown());
     setTextAnswer(getInitialText());
   }, [question.id, question.answerType, answerDep, question.defaultValue, question.hasDefaultValue]);
+
+  // If uniqueAlphanumeric12 or currentDate is empty, immediately save the newly generated default/initial value to database
+  useEffect(() => {
+    if (question.answerType === 'uniqueAlphanumeric12' && (!question.answer || (Array.isArray(question.answer) && question.answer.length === 0))) {
+      saveAnswerToDatabase([textAnswer]);
+    }
+    if (question.answerType === 'currentDate' && (!question.answer || (Array.isArray(question.answer) && question.answer.length === 0))) {
+      saveAnswerToDatabase([textAnswer]);
+    }
+  }, [question.id, question.answerType]);
 
   const saveAnswerToDatabase = async (newAnswer) => {
     try {
@@ -475,6 +540,31 @@ const DynamicQuestionBuilder = ({ productId, stageId, question, index, allStages
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-750 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900 dark:text-white transition-all font-semibold"
               />
             )}
+            {formData.answerType === 'dateString' && (
+              <input
+                type="date"
+                value={getISODateValue(formData.defaultValue)}
+                onChange={e => {
+                  if (!e.target.value) {
+                    setFormData({ ...formData, defaultValue: '' });
+                    return;
+                  }
+                  const d = new Date(e.target.value);
+                  const formatted = d.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  });
+                  setFormData({ ...formData, defaultValue: formatted });
+                }}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-750 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900 dark:text-white transition-all font-semibold"
+              />
+            )}
+            {(formData.answerType === 'uniqueAlphanumeric12' || formData.answerType === 'currentDate') && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 italic font-medium p-1 select-none">
+                Default value will be automatically generated for this type.
+              </p>
+            )}
           </div>
         )}
 
@@ -768,6 +858,75 @@ const DynamicQuestionBuilder = ({ productId, stageId, question, index, allStages
                   saveAnswerToDatabase(e.target.value);
                 }}
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900 dark:text-white transition-all shadow-sm font-medium"
+              />
+            </div>
+          )}
+
+          {question.answerType === 'uniqueAlphanumeric12' && (
+            <div className="w-full max-w-md flex gap-2">
+              <input
+                type="text"
+                value={textAnswer}
+                readOnly
+                className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-500 dark:text-slate-400 font-mono shadow-sm select-all cursor-not-allowed"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const newVal = generateAlphanumeric12();
+                  setTextAnswer(newVal);
+                  saveAnswerToDatabase(newVal);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 shrink-0"
+              >
+                Regenerate
+              </button>
+            </div>
+          )}
+
+          {question.answerType === 'currentDate' && (
+            <div className="w-full max-w-md flex gap-2">
+              <input
+                type="text"
+                value={textAnswer}
+                readOnly
+                className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-500 dark:text-slate-400 font-semibold shadow-sm cursor-not-allowed"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const newVal = getCurrentDateString();
+                  setTextAnswer(newVal);
+                  saveAnswerToDatabase(newVal);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 select-none whitespace-nowrap"
+              >
+                Update Time
+              </button>
+            </div>
+          )}
+
+          {question.answerType === 'dateString' && (
+            <div className="w-full max-w-xs">
+              <input
+                type="date"
+                value={getISODateValue(textAnswer)}
+                onChange={e => {
+                  if (!e.target.value) {
+                    setTextAnswer('');
+                    saveAnswerToDatabase('');
+                    return;
+                  }
+                  const d = new Date(e.target.value);
+                  const formatted = d.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  });
+                  setTextAnswer(formatted);
+                  saveAnswerToDatabase(formatted);
+                }}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900 dark:text-white transition-all shadow-sm font-semibold"
               />
             </div>
           )}

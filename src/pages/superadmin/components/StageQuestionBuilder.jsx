@@ -17,6 +17,9 @@ const QUESTION_TYPES = [
   { label: 'Date', value: 'Date', icon: Calendar, color: 'emerald' },
   { label: 'Time', value: 'Time', icon: Clock, color: 'rose' },
   { label: 'Date & Time', value: 'Date and Time', icon: Calendar, color: 'violet' },
+  { label: 'Unique Alphanumeric (12)', value: 'uniqueAlphanumeric12', icon: Hash, color: 'cyan' },
+  { label: 'Date String', value: 'dateString', icon: Calendar, color: 'emerald' },
+  { label: 'Current Date', value: 'currentDate', icon: Clock, color: 'rose' },
 ];
 
 const getIcon = (value) => {
@@ -28,18 +31,27 @@ const getLabel = (value) => {
   const found = QUESTION_TYPES.find(t => t.value === value);
   return found ? found.label : value;
 };
+const getISODateValue = (str) => {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+};
 
 const getColorConfig = (value) => {
   const colors = {
     'Short Answer': { bg: 'bg-teal-50 dark:bg-teal-950/30', text: 'text-teal-700 dark:text-teal-400', border: 'border-teal-200/50 dark:border-teal-800/30' },
-    'Short Answer Numeric': { bg: 'bg-orange-50 dark:bg-orange-950/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200/50 dark:border-orange-850/30' },
-    'Paragraph': { bg: 'bg-purple-50 dark:bg-purple-950/30', text: 'text-purple-700 dark:text-purple-400', border: 'border-purple-200/50 dark:border-purple-800/30' },
-    'Multiple Choice': { bg: 'bg-blue-50 dark:bg-blue-950/30', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200/50 dark:border-blue-800/30' },
-    'Checkbox': { bg: 'bg-indigo-50 dark:bg-indigo-950/30', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-200/50 dark:border-indigo-800/30' },
+    'Short Answer Numeric': { bg: 'bg-orange-50 dark:bg-orange-955/20', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200/50 dark:border-orange-850/30' },
+    'Paragraph': { bg: 'bg-purple-50 dark:bg-purple-955/20', text: 'text-purple-700 dark:text-purple-400', border: 'border-purple-200/50 dark:border-purple-800/30' },
+    'Multiple Choice': { bg: 'bg-blue-50 dark:bg-blue-955/20', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200/50 dark:border-blue-800/30' },
+    'Checkbox': { bg: 'bg-indigo-50 dark:bg-indigo-955/20', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-200/50 dark:border-indigo-800/30' },
     'Dropdown Menu': { bg: 'bg-amber-50 dark:bg-amber-955/20', text: 'text-amber-705 dark:text-amber-400', border: 'border-amber-200/50 dark:border-amber-900/30' },
     'Date': { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200/50 dark:border-emerald-800/30' },
-    'Time': { bg: 'bg-rose-50 dark:bg-rose-950/30', text: 'text-rose-700 dark:text-rose-400', border: 'border-rose-200/50 dark:border-rose-800/30' },
-    'Date and Time': { bg: 'bg-violet-50 dark:bg-violet-950/30', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-200/50 dark:border-violet-800/30' },
+    'Time': { bg: 'bg-rose-50 dark:bg-rose-955/20', text: 'text-rose-700 dark:text-rose-400', border: 'border-rose-200/50 dark:border-rose-800/30' },
+    'Date and Time': { bg: 'bg-violet-50 dark:bg-violet-955/20', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-200/50 dark:border-violet-800/30' },
+    'uniqueAlphanumeric12': { bg: 'bg-cyan-50 dark:bg-cyan-950/20', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-200/50 dark:border-cyan-900/30' },
+    'dateString': { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200/50 dark:border-emerald-800/30' },
+    'currentDate': { bg: 'bg-rose-50 dark:bg-rose-955/20', text: 'text-rose-700 dark:text-rose-400', border: 'border-rose-200/50 dark:border-rose-800/30' },
   };
   return colors[value] || colors['Short Answer'];
 };
@@ -314,6 +326,29 @@ const QuestionEditForm = ({ question, onSave, onCancel, onDelete }) => {
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 dark:text-white font-medium transition-all"
                 />
               )}
+              {form.answerType === 'dateString' && (
+                <input
+                  type="date"
+                  value={form.defaultValue}
+                  onChange={e => setForm({ ...form, defaultValue: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 dark:text-white font-medium transition-all"
+                />
+              )}
+              {form.answerType === 'uniqueAlphanumeric12' && (
+                <input
+                  type="text"
+                  maxLength={12}
+                  value={form.defaultValue}
+                  onChange={e => setForm({ ...form, defaultValue: e.target.value })}
+                  placeholder="Enter default 12-char alphanumeric value (optional)..."
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 dark:text-white font-medium transition-all"
+                />
+              )}
+              {form.answerType === 'currentDate' && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 italic p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                  Current Date questions automatically capture and display the current date and time on load. No default value configuration is required.
+                </div>
+              )}
               {form.answerType === 'Time' && (
                 <input
                   type="time"
@@ -457,6 +492,21 @@ const QuestionViewCard = ({ question, index, onEdit, onDelete }) => {
             {question.answerType === 'Date' && (
               <div className="inline-flex items-center gap-2 text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg font-medium">
                 <Calendar size={13} /> Select Date...
+              </div>
+            )}
+            {question.answerType === 'dateString' && (
+              <div className="inline-flex items-center gap-2 text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg font-medium">
+                <Calendar size={13} /> Select Date String...
+              </div>
+            )}
+            {question.answerType === 'uniqueAlphanumeric12' && (
+              <div className="inline-flex items-center gap-2 text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg font-medium">
+                <Hash size={13} /> Generate Unique 12-char Alphanumeric...
+              </div>
+            )}
+            {question.answerType === 'currentDate' && (
+              <div className="inline-flex items-center gap-2 text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg font-medium bg-slate-50 dark:bg-slate-900/50">
+                <Clock size={13} /> Auto-captures Current Date & Time
               </div>
             )}
             {question.answerType === 'Time' && (

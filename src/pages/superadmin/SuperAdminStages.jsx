@@ -20,11 +20,45 @@ import StageQuestionBuilder, { makeQuestion, ConfirmDialog } from './components/
  *     - stageName, stageDescription, stageOrder, status, questions[], assignedEmployeeIds[], assignedEmployeeNames[], assignedEmployeeId, assignedEmployeeName, createdAt, updatedAt
  */
 
+/* ─── Helpers ─── */
+const generateAlphanumeric12 = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+const getCurrentDateString = () => {
+  const d = new Date();
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const getISODateValue = (str) => {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+};
+
 /* ─── Interactive Question Preview ─── */
 const InteractiveQuestionPreview = ({ q, idx }) => {
-  const [textVal, setTextVal] = useState(() => 
-    q.hasDefaultValue && q.defaultValue !== undefined && q.defaultValue !== null ? String(q.defaultValue) : ''
-  );
+  const [textVal, setTextVal] = useState(() => {
+    if (q.answerType === 'uniqueAlphanumeric12') {
+      return generateAlphanumeric12();
+    }
+    if (q.answerType === 'currentDate') {
+      return getCurrentDateString();
+    }
+    return q.hasDefaultValue && q.defaultValue !== undefined && q.defaultValue !== null ? String(q.defaultValue) : '';
+  });
   const [mcVal, setMcVal] = useState(() => 
     q.hasDefaultValue && q.defaultValue ? (Array.isArray(q.defaultValue) ? q.defaultValue[0] || '' : String(q.defaultValue)) : ''
   );
@@ -36,7 +70,13 @@ const InteractiveQuestionPreview = ({ q, idx }) => {
   );
 
   useEffect(() => {
-    setTextVal(q.hasDefaultValue && q.defaultValue !== undefined && q.defaultValue !== null ? String(q.defaultValue) : '');
+    if (q.answerType === 'uniqueAlphanumeric12') {
+      setTextVal(generateAlphanumeric12());
+    } else if (q.answerType === 'currentDate') {
+      setTextVal(getCurrentDateString());
+    } else {
+      setTextVal(q.hasDefaultValue && q.defaultValue !== undefined && q.defaultValue !== null ? String(q.defaultValue) : '');
+    }
     setMcVal(q.hasDefaultValue && q.defaultValue ? (Array.isArray(q.defaultValue) ? q.defaultValue[0] || '' : String(q.defaultValue)) : '');
     setCheckboxVal(q.hasDefaultValue && q.defaultValue ? (Array.isArray(q.defaultValue) ? q.defaultValue : [q.defaultValue]) : []);
     setDropdownVal(q.hasDefaultValue && q.defaultValue ? (Array.isArray(q.defaultValue) ? q.defaultValue[0] || '' : String(q.defaultValue)) : '');
@@ -176,6 +216,63 @@ const InteractiveQuestionPreview = ({ q, idx }) => {
                 value={textVal}
                 onChange={e => setTextVal(e.target.value)}
                 className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-755 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 dark:text-white font-medium"
+              />
+            )}
+
+            {q.answerType === 'uniqueAlphanumeric12' && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={textVal}
+                  readOnly
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-500 dark:text-slate-400 font-mono cursor-not-allowed select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTextVal(generateAlphanumeric12())}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 shadow-sm"
+                >
+                  Regenerate
+                </button>
+              </div>
+            )}
+
+            {q.answerType === 'currentDate' && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={textVal}
+                  readOnly
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-500 dark:text-slate-400 font-semibold cursor-not-allowed"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTextVal(getCurrentDateString())}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shrink-0 select-none whitespace-nowrap active:scale-95 shadow-sm"
+                >
+                  Update Time
+                </button>
+              </div>
+            )}
+
+            {q.answerType === 'dateString' && (
+              <input
+                type="date"
+                value={getISODateValue(textVal)}
+                onChange={e => {
+                  if (!e.target.value) {
+                    setTextVal('');
+                    return;
+                  }
+                  const d = new Date(e.target.value);
+                  const formatted = d.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  });
+                  setTextVal(formatted);
+                }}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 dark:text-white font-semibold transition-all"
               />
             )}
           </div>
